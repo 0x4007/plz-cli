@@ -1,14 +1,14 @@
 [package]
 name = "plz"
 license = "MIT"
-edition = "2021"
-version = "0.1.0"
+edition = "2024"
+version = "1.0.0"
 readme = "README.md"
 categories = ["command-line-utilities"]
-homepage = "https://github.com/m1guelpf/plz-cli"
-repository = "https://github.com/m1guelpf/plz-cli"
-authors = ["Miguel Piedrafita <soy@miguelpiedrafita.com>"]
-description = "Generate bash scripts from the command line, using Codex"
+homepage = "https://github.com/0x4007/plz-cli"
+repository = "https://github.com/0x4007/plz-cli"
+authors = ["Miguel Piedrafita <soy@miguelpiedrafita.com>", "0x4007"]
+description = "Generate bash scripts from the command line, using Claude 3.5 Sonnet"
 
 [dependencies]
 question = "0.2.2"

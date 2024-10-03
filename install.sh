@@ -54,7 +54,7 @@ main() {
         ARCHITECTURE="x86_64" # Amd.
         fi
 
-    BINARY_URL="https://github.com/m1guelpf/plz-cli/releases/latest/download/plz-${PLATFORM}-${ARCHITECTURE}"
+    BINARY_URL="https://github.com/0x4007/plz-cli/releases/latest/download/plz-${PLATFORM}-${ARCHITECTURE}"
     echo "$BINARY_URL"
 
     echo "downloading latest binary"
