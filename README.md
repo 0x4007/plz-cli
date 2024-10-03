@@ -44,6 +44,18 @@ Options:
 
 Make sure you have the latest version of rust installed (use [rustup](https://rustup.rs/)). Then, you can build the project by running `cargo build`, and run it with `cargo run`.
 
+### Releasing
+
+Releases are automated with v prefixed tags. To create a new release, run something similar to the following:
+
+```sh
+SEMVER=0.0.0
+RELEASE_COMMENT="Default Message. Release 0.0.0"
+
+git tag -s $SEMVER -m "$RELEASE_COMMENT"
+git push origin $SEMVER
+```
+
 ## License
 
 This project is open-sourced under the MIT license. See [the License file](LICENSE) for more information.
