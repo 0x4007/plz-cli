@@ -26,14 +26,13 @@ impl Config {
             _ => return,
         };
 
-        std::fs::OpenOptions::new()
+        if let Err(err) = std::fs::OpenOptions::new()
             .append(true)
             .open(history_file)
-            .map_or((), |mut file| {
-                file.write_all(format!("{code}\n").as_bytes())
-                    .unwrap_or_else(|_| {
-                        exit(1);
-                    });
-            });
+            .and_then(|mut file| file.write_all(format!("{code}\n").as_bytes()))
+        {
+            eprintln!("Failed to write to history file: {}", err);
+            exit(1);
+        }
     }
 }
