@@ -1,7 +1,7 @@
 [package]
 name = "plz"
 license = "MIT"
-edition = "2024"
+edition = "2021"
 version = "1.0.0"
 readme = "README.md"
 categories = ["command-line-utilities"]
@@ -18,3 +18,4 @@ clap = { version = "4.0.29", features = ["derive"] }
 reqwest = { version = "0.11.13", default-features = false, features = ["json", "blocking", "rustls-tls"] }
 bat = { version = "0.22.1", default-features = false, features = ["regex-onig"] }
 colored = "2.0.0"
+dirs = "5.0"

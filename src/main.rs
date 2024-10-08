@@ -146,5 +146,30 @@ fn build_prompt(prompt: &str) -> String {
         ""
     };
 
-    format!("Generate a bash script for the following task{os_hint}: {prompt}\n\nPlease provide only the bash script, without any additional explanations or markdown formatting.")
+    let env_vars = get_env_vars();
+    let env_vars_str = env_vars.join("\n");
+
+    format!(
+        "Generate a bash script for the following task{os_hint}: {prompt}\n\n\
+        The following environment variables are available:\n\
+        {env_vars_str}\n\n\
+        Please provide only the bash script, without any additional explanations or markdown formatting."
+    )
+}
+
+fn get_env_vars() -> Vec<String> {
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg("env")
+        .output()
+        .expect("Failed to execute command");
+
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| {
+            line.split('=')
+                .next()
+                .map(|var_name| var_name.trim().to_string())
+        })
+        .collect()
 }
