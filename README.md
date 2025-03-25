@@ -2,7 +2,7 @@
 
 A CLI tool that generates shell scripts from a human readable description.
 
-This is a modded version of [plz-cli](https://github.com/m1guelpf/plz-cli) that now uses Claude 3.5 Sonnet instead of GPT-3.5 Turbo Instruct.
+This is a modded version of [plz-cli](https://github.com/m1guelpf/plz-cli) that now uses Claude 3.7 Sonnet via OpenRouter instead of GPT-3.5 Turbo Instruct.
 
 ## Installation
 
@@ -15,10 +15,10 @@ You may need to close and reopen your terminal after installation. Alternatively
 
 ## Usage
 
-`plz` uses [Claude 3.5 Sonnet](https://console.anthropic.com/). To use it, you'll need to grab an API key from [your dashboard](https://console.anthropic.com/settings/keys), and save it to `ANTHROPIC_API_KEY` as follows (you can also save it in your bash/zsh profile for persistance between sessions).
+`plz` uses [Claude 3.7 Sonnet](https://openrouter.ai/docs) via OpenRouter. To use it, you'll need to grab an API key from [OpenRouter](https://openrouter.ai/keys), and save it to `OPENROUTER_API_KEY` as follows (you can also save it in your bash/zsh profile for persistence between sessions).
 
 ```bash
-export ANTHROPIC_API_KEY='sk-ant-XXXXXXXX'
+export OPENROUTER_API_KEY='sk-XXXXXXXX'
 ```
 
 Once you have configured your environment, run `plz` followed by whatever it is that you want to do (`plz show me all options for the plz cli`).
@@ -35,9 +35,10 @@ Arguments:
   <PROMPT>  Description of the command to execute
 
 Options:
-  -y, --force    Run the generated program without asking for confirmation
-  -h, --help     Print help information
-  -V, --version  Print version information
+  -y, --force     Run the generated program without asking for confirmation
+      --extended  Remove token limit for complex scripts (may increase API costs)
+  -h, --help      Print help information
+  -V, --version   Print version information
 ```
 
 ## Develop

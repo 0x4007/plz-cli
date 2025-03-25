@@ -1,21 +1,21 @@
 # Active Context: plz-cli
 
 ## Current State
-The project is a functional CLI tool that generates shell scripts using Claude 3.5 Sonnet. It is a modified version of the original plz-cli that now uses Claude 3.5 Sonnet instead of GPT-3.5 Turbo Instruct.
+The project is a functional CLI tool that generates shell scripts using Claude 3.7 Sonnet via OpenRouter. It is a modified version of the original plz-cli that now uses Claude instead of GPT-3.5 Turbo Instruct.
 
 ## Recent Changes
-- Migrated from GPT-3.5 Turbo Instruct to Claude 3.5 Sonnet
-- Updated API integration for Anthropic's Claude API
-- Adjusted prompt formatting for improved command generation
-- Added environment variable collection for context
+- Migrated to OpenRouter API for Claude access
+- Updated to Claude 3.7 Sonnet model
+- Modified API integration for OpenRouter compatibility
+- Restructured message format for OpenRouter
 
 ## Active Decisions
 
 ### API Integration
-- Using Claude 3.5 Sonnet model
+- Using Claude 3.7 Sonnet via OpenRouter
 - Synchronous API calls for simplicity
-- Error handling for both client and server errors
-- Maximum token limit set to 1000
+- OpenRouter-specific error handling
+- Default 4000 token limit with --extended option for 32000
 
 ### Command Generation
 - OS-aware prompt construction

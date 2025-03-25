@@ -9,10 +9,10 @@
    - Provides strong safety guarantees
    - Efficient binary output
 
-2. **Claude 3.5 Sonnet API**
+2. **OpenRouter API (with Claude 3 Sonnet)**
+   - Managed API access to Claude
    - Natural language processing
    - Command generation
-   - Context-aware responses
    - High accuracy results
 
 ### Key Dependencies
@@ -34,8 +34,8 @@
 
 2. **Environment Configuration**
    ```bash
-   ANTHROPIC_API_KEY=sk-ant-xxxx    # Required: Claude API key
-   ANTHROPIC_API_BASE=https://api.anthropic.com    # Optional: API endpoint
+   OPENROUTER_API_KEY=sk-xxxx    # Required: OpenRouter API key
+   OPENROUTER_API_BASE=https://openrouter.ai/api    # Optional: API endpoint
    ```
 
 ### Build Process
@@ -57,7 +57,7 @@
 ## Technical Constraints
 
 ### API Limitations
-- Requires valid Anthropic API key
+- Requires valid OpenRouter API key
 - Subject to API rate limits
 - Dependent on API availability
 - Limited to bash script generation
@@ -73,7 +73,7 @@
 ### API Configuration
 - API key from environment
 - Configurable API base URL
-- Default timeout settings
+- Configurable token limits (4000 default, 32000 extended)
 - Error handling for API issues
 
 ### Shell Integration

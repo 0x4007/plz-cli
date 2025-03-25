@@ -3,20 +3,18 @@ use std::{env, io::Write, process::exit};
 
 pub struct Config {
     pub api_key: String,
-    pub api_base: String,
     pub shell: String,
 }
 
 impl Config {
     pub fn new() -> Self {
-        let api_key = env::var("ANTHROPIC_API_KEY").unwrap_or_else(|_| {
-            println!("{}", "This program requires an Anthropic API key to run. Please set the ANTHROPIC_API_KEY environment variable.".red());
+        let api_key = env::var("OPENROUTER_API_KEY").unwrap_or_else(|_| {
+            println!("{}", "This program requires an OpenRouter API key to run. Please set the OPENROUTER_API_KEY environment variable.".red());
             exit(1);
         });
-        let api_base = env::var("ANTHROPIC_API_BASE").unwrap_or_else(|_| String::from("https://api.anthropic.com"));
         let shell = env::var("SHELL").unwrap_or_else(|_| String::new());
 
-        Self { api_key, api_base, shell }
+        Self { api_key, shell }
     }
 
     pub fn write_to_history(&self, code: &str) {

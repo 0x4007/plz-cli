@@ -21,38 +21,64 @@ struct Cli {
     /// Run the generated program without asking for confirmation
     #[clap(short = 'y', long)]
     force: bool,
+
+    /// Remove token limit for complex scripts (may increase API costs)
+    #[clap(long)]
+    extended: bool,
 }
 
 fn main() {
     let cli = Cli::parse();
     let config = Config::new();
 
-    let client = Client::new();
-    let mut spinner = Spinner::new(Spinners::BouncingBar, "Generating your command...".into());
-    let api_addr = format!("{}/v1/messages", config.api_base);
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .unwrap();
+    let mut spinner = Spinner::new(Spinners::BouncingBar, format!(
+        "Generating your command{} (this may take a while)...",
+        if cli.extended { " in extended mode" } else { "" }
+    ).into());
+    let api_addr = "https://openrouter.ai/api/v1/chat/completions".to_string();
     let response = client
         .post(api_addr)
         .json(&json!({
-            "model": "claude-3-5-sonnet-20240620",
-            "max_tokens": 1000,
+            "model": "anthropic/claude-3-7-sonnet",
+            "max_tokens": if cli.extended { 32000 } else { 1000 },
             "temperature": 0,
-            "system": "You are a helpful assistant that generates bash scripts based on user prompts.",
             "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that generates bash scripts based on user prompts."
+                },
                 {
                     "role": "user",
                     "content": build_prompt(&cli.prompt.join(" "))
                 }
             ]
         }))
-        .header("x-api-key", &config.api_key)
-        .header("anthropic-version", "2023-06-01")
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .header("HTTP-Referer", "https://github.com/0x4007/plz-cli")
+        .header("Content-Type", "application/json")
         .send()
-        .unwrap();
+        .unwrap_or_else(|e| {
+            spinner.stop_and_persist(
+                "✖".red().to_string().as_str(),
+                format!("API request failed: {}", e).red().to_string(),
+            );
+            std::process::exit(1)
+        });
 
     let status_code = response.status();
     if status_code.is_client_error() {
-        let response_body = response.json::<serde_json::Value>().unwrap();
-        let error_message = response_body["error"]["message"].as_str().unwrap();
+        let response_body = response.json::<serde_json::Value>().unwrap_or_else(|e| {
+            spinner.stop_and_persist(
+                "✖".red().to_string().as_str(),
+                format!("Failed to parse error response: {}", e).red().to_string(),
+            );
+            std::process::exit(1)
+        });
+        let error_message = response_body["error"]["message"].as_str().unwrap_or("Unknown error");
         spinner.stop_and_persist(
             "✖".red().to_string().as_str(),
             format!("API error: \"{error_message}\"").red().to_string(),
@@ -61,16 +87,33 @@ fn main() {
     } else if status_code.is_server_error() {
         spinner.stop_and_persist(
             "✖".red().to_string().as_str(),
-            format!("Anthropic is currently experiencing problems. Status code: {status_code}")
+            format!("OpenRouter is currently experiencing problems. Status code: {status_code}")
                 .red()
                 .to_string(),
         );
         std::process::exit(1);
     }
 
-    let code = response.json::<serde_json::Value>().unwrap()["content"][0]["text"]
-        .as_str()
-        .unwrap()
+    let code = response.json::<serde_json::Value>()
+        .unwrap_or_else(|e| {
+            spinner.stop_and_persist(
+                "✖".red().to_string().as_str(),
+                format!("Failed to parse API response: {}", e).red().to_string(),
+            );
+            std::process::exit(1)
+        })
+        .get("choices")
+        .and_then(|choices| choices.get(0))
+        .and_then(|choice| choice.get("message"))
+        .and_then(|message| message.get("content"))
+        .and_then(|content| content.as_str())
+        .unwrap_or_else(|| {
+            spinner.stop_and_persist(
+                "✖".red().to_string().as_str(),
+                "Invalid API response format".red().to_string(),
+            );
+            std::process::exit(1)
+        })
         .trim()
         .to_string();
 
