@@ -9,6 +9,7 @@ This is a modded version of [plz-cli](https://github.com/m1guelpf/plz-cli) that 
 ```
 cargo build --release
 cp ./target/release/plz ~/.bin/plz
+
 ```
 
 You may need to close and reopen your terminal after installation. Alternatively, you can download the binary corresponding to your OS from the [latest release](https://github.com/0x4007/plz-cli/releases/latest).

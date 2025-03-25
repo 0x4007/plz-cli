@@ -73,7 +73,7 @@
 ### API Configuration
 - API key from environment
 - Configurable API base URL
-- Configurable token limits (4000 default, 32000 extended)
+- Configurable token limits (1000 default, 32000 extended)
 - Error handling for API issues
 
 ### Shell Integration

@@ -15,7 +15,7 @@ The project is a functional CLI tool that generates shell scripts using Claude 3
 - Using Claude 3.7 Sonnet via OpenRouter
 - Synchronous API calls for simplicity
 - OpenRouter-specific error handling
-- Default 4000 token limit with --extended option for 32000
+- Default 1000 token limit with --extended option for 32000
 
 ### Command Generation
 - OS-aware prompt construction
