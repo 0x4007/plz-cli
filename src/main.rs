@@ -23,117 +23,171 @@ struct Cli {
     force: bool,
 }
 
-fn main() {
-    let cli = Cli::parse();
-    let config = Config::new();
+fn generate_code(prompt: &str, max_tokens: u32, config: &Config) -> Result<String, String> {
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| format!("Failed to build client: {}", e))?;
 
-    let client = Client::new();
-    let mut spinner = Spinner::new(Spinners::BouncingBar, "Generating your command...".into());
-    let api_addr = format!("{}/v1/messages", config.api_base);
+    let api_addr = "https://openrouter.ai/api/v1/chat/completions".to_string();
     let response = client
         .post(api_addr)
         .json(&json!({
-            "model": "claude-3-5-sonnet-20240620",
-            "max_tokens": 1000,
+            "model": "anthropic/claude-3-7-sonnet",
+            "max_tokens": max_tokens,
             "temperature": 0,
-            "system": "You are a helpful assistant that generates bash scripts based on user prompts.",
             "messages": [
                 {
+                    "role": "system",
+                    "content": "You are a helpful assistant that generates bash scripts based on user prompts."
+                },
+                {
                     "role": "user",
-                    "content": build_prompt(&cli.prompt.join(" "))
+                    "content": prompt
                 }
             ]
         }))
-        .header("x-api-key", &config.api_key)
-        .header("anthropic-version", "2023-06-01")
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .header("HTTP-Referer", "https://github.com/0x4007/plz-cli")
+        .header("Content-Type", "application/json")
         .send()
-        .unwrap();
+        .map_err(|e| format!("API request failed: {}", e))?;
 
-    let status_code = response.status();
-    if status_code.is_client_error() {
-        let response_body = response.json::<serde_json::Value>().unwrap();
-        let error_message = response_body["error"]["message"].as_str().unwrap();
-        spinner.stop_and_persist(
-            "✖".red().to_string().as_str(),
-            format!("API error: \"{error_message}\"").red().to_string(),
-        );
-        std::process::exit(1);
-    } else if status_code.is_server_error() {
-        spinner.stop_and_persist(
-            "✖".red().to_string().as_str(),
-            format!("Anthropic is currently experiencing problems. Status code: {status_code}")
-                .red()
-                .to_string(),
-        );
-        std::process::exit(1);
+    let status = response.status();
+    if status.is_client_error() {
+        let error_json = response
+            .json::<serde_json::Value>()
+            .map_err(|e| format!("Failed to parse error response: {}", e))?;
+        let error_message = error_json["error"]["message"]
+            .as_str()
+            .unwrap_or("Unknown error");
+        return Err(format!("API error: \"{}\"", error_message));
+    } else if status.is_server_error() {
+        return Err(format!(
+            "OpenRouter is currently experiencing problems. Status code: {}",
+            status
+        ));
     }
 
-    let code = response.json::<serde_json::Value>().unwrap()["content"][0]["text"]
-        .as_str()
-        .unwrap()
-        .trim()
-        .to_string();
+    let response_json = response
+        .json::<serde_json::Value>()
+        .map_err(|e| format!("Failed to parse API response: {}", e))?;
 
-    spinner.stop_and_persist(
-        "✔".green().to_string().as_str(),
-        "Got some code!".green().to_string(),
-    );
+    let content = response_json
+        .get("choices")
+        .and_then(|choices| choices.get(0))
+        .and_then(|choice| choice.get("message"))
+        .and_then(|message| message.get("content"))
+        .and_then(|content| content.as_str())
+        .ok_or_else(|| "Invalid API response format".to_string())?;
 
-    PrettyPrinter::new()
-        .input_from_bytes(code.as_bytes())
-        .language("bash")
-        .grid(true)
-        .print()
-        .unwrap();
+    Ok(content.trim().to_string())
+}
 
-    let should_run = if cli.force {
-        true
-    } else {
-        Question::new(
-            ">> Run the generated program? [Y/n]"
-                .bright_black()
-                .to_string()
-                .as_str(),
-        )
-        .yes_no()
-        .until_acceptable()
-        .default(Answer::YES)
-        .ask()
-        .expect("Couldn't ask question.")
-            == Answer::YES
-    };
+fn main() {
+    let cli = Cli::parse();
+    let config = Config::new();
+    let mut current_token_limit = 1000;
+    let prompt = build_prompt(&cli.prompt.join(" "));
+    let mut spinner;
 
-    if should_run {
-        config.write_to_history(code.as_str());
-        spinner = Spinner::new(Spinners::BouncingBar, "Executing...".into());
+    loop {
+        spinner = Spinner::new(Spinners::BouncingBar, format!(
+            "Generating your command with {} tokens...",
+            current_token_limit
+        ).into());
 
-        let output = Command::new("bash")
-            .arg("-c")
-            .arg(code.as_str())
-            .output()
-            .unwrap_or_else(|_| {
+        let code_result = generate_code(&prompt, current_token_limit, &config);
+
+        match code_result {
+            Ok(code) => {
+                spinner.stop_and_persist(
+                    "✔".green().to_string().as_str(),
+                    "Got some code!".green().to_string(),
+                );
+
+                PrettyPrinter::new()
+                    .input_from_bytes(code.as_bytes())
+                    .language("bash")
+                    .grid(true)
+                    .print()
+                    .unwrap();
+
+                let should_run = if cli.force {
+                    true
+                } else {
+                    Question::new(
+                        ">> Run the generated program? [Y/n]"
+                            .bright_black()
+                            .to_string()
+                            .as_str(),
+                    )
+                    .yes_no()
+                    .until_acceptable()
+                    .default(Answer::YES)
+                    .ask()
+                    .expect("Couldn't ask question.")
+                        == Answer::YES
+                };
+
+                if should_run {
+                    config.write_to_history(code.as_str());
+                    spinner = Spinner::new(Spinners::BouncingBar, "Executing...".into());
+
+                    let output = Command::new("bash")
+                        .arg("-c")
+                        .arg(code.as_str())
+                        .output()
+                        .unwrap_or_else(|_| {
+                            spinner.stop_and_persist(
+                                "✖".red().to_string().as_str(),
+                                "Failed to execute the generated program.".red().to_string(),
+                            );
+                            std::process::exit(1);
+                        });
+
+                    if !output.status.success() {
+                        let error_output = String::from_utf8_lossy(&output.stderr);
+                        println!("{}", error_output);
+
+                        if current_token_limit >= 64000 {
+                            spinner.stop_and_persist(
+                                "✖".red().to_string().as_str(),
+                                "The program failed even with maximum token limit.".red().to_string(),
+                            );
+                            std::process::exit(1);
+                        }
+
+                        current_token_limit *= 2;
+                        continue;
+                    }
+
+                    spinner.stop_and_persist(
+                        "✔".green().to_string().as_str(),
+                        "Command ran successfully".green().to_string(),
+                    );
+
+                    println!("{}", String::from_utf8_lossy(&output.stdout));
+                }
+                break;
+            }
+            Err(e) => {
                 spinner.stop_and_persist(
                     "✖".red().to_string().as_str(),
-                    "Failed to execute the generated program.".red().to_string(),
+                    e.red().to_string(),
                 );
-                std::process::exit(1);
-            });
+                if current_token_limit >= 64000 {
+                    spinner.stop_and_persist(
+                        "✖".red().to_string().as_str(),
+                        "Failed to generate code even with maximum token limit.".red().to_string(),
+                    );
+                    std::process::exit(1);
+                }
 
-        if !output.status.success() {
-            spinner.stop_and_persist(
-                "✖".red().to_string().as_str(),
-                "The program threw an error.".red().to_string(),
-            );
-            println!("{}", String::from_utf8_lossy(&output.stderr));
-            std::process::exit(1);
+                current_token_limit *= 2;
+                continue;
+            }
         }
-
-        spinner.stop_and_persist(
-            "✔".green().to_string().as_str(),
-            "Command ran successfully".green().to_string(),
-        );
-
-        println!("{}", String::from_utf8_lossy(&output.stdout));
     }
 }
 
