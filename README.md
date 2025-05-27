@@ -16,10 +16,41 @@ You may need to close and reopen your terminal after installation. Alternatively
 
 ## Usage
 
-`plz` uses [Claude 3.7 Sonnet](https://openrouter.ai/docs) via OpenRouter. To use it, you'll need to grab an API key from [OpenRouter](https://openrouter.ai/keys), and save it to `OPENROUTER_API_KEY` as follows (you can also save it in your bash/zsh profile for persistence between sessions).
+`plz` uses [Claude 3.7 Sonnet](https://openrouter.ai/docs) via OpenRouter by default. To use it, you'll need to grab an API key from [OpenRouter](https://openrouter.ai/keys), and save it to `OPENROUTER_API_KEY` as follows (you can also save it in your bash/zsh profile for persistence between sessions).
 
 ```bash
 export OPENROUTER_API_KEY='sk-XXXXXXXX'
+```
+
+### Configuration Options
+
+You can customize the LLM model and behavior using these optional environment variables:
+
+```bash
+# Use a different model (default: anthropic/claude-opus-4)
+export OPENROUTER_MODEL='openai/gpt-4'  # or any model available on OpenRouter
+
+# Use a custom API endpoint (default: https://openrouter.ai/api/v1/chat/completions)
+export OPENROUTER_API_BASE='https://custom-endpoint.com/v1/chat/completions'
+
+# Use a custom system prompt (default: generates bash scripts)
+export OPENROUTER_SYSTEM_PROMPT='You are a PowerShell expert. Generate PowerShell scripts.'
+```
+
+### Examples
+
+```bash
+# Basic usage with default Claude model
+plz list all files in current directory
+
+# Use GPT-4 instead
+export OPENROUTER_MODEL='openai/gpt-4'
+plz find all large files over 100MB
+
+# Use Claude Opus with custom prompt for PowerShell
+export OPENROUTER_MODEL='anthropic/claude-3-opus'
+export OPENROUTER_SYSTEM_PROMPT='You are a PowerShell expert. Generate PowerShell scripts.'
+plz get system information
 ```
 
 Once you have configured your environment, run `plz` followed by whatever it is that you want to do (`plz show me all options for the plz cli`).

@@ -8,6 +8,11 @@ The project is a functional CLI tool that generates shell scripts using Claude 3
 - Updated to Claude 3.7 Sonnet model
 - Modified API integration for OpenRouter compatibility
 - Restructured message format for OpenRouter
+- **Made LLM configuration flexible via environment variables**
+- Added support for custom models, API endpoints, and system prompts
+- Environment variable `OPENROUTER_MODEL` now controls the LLM model
+- Default model changed to `anthropic/claude-3-opus-20240229`
+- Added to .bashrc for easy configuration
 
 ## Active Decisions
 

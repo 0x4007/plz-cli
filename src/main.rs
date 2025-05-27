@@ -29,17 +29,16 @@ fn generate_code(prompt: &str, max_tokens: u32, config: &Config) -> Result<Strin
         .build()
         .map_err(|e| format!("Failed to build client: {}", e))?;
 
-    let api_addr = "https://openrouter.ai/api/v1/chat/completions".to_string();
     let response = client
-        .post(api_addr)
+        .post(&config.api_base)
         .json(&json!({
-            "model": "anthropic/claude-3-7-sonnet",
+            "model": &config.model,
             "max_tokens": max_tokens,
             "temperature": 0,
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a helpful assistant that generates bash scripts based on user prompts."
+                    "content": &config.system_prompt
                 },
                 {
                     "role": "user",

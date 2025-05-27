@@ -34,8 +34,13 @@
 
 2. **Environment Configuration**
    ```bash
-   OPENROUTER_API_KEY=sk-xxxx    # Required: OpenRouter API key
-   OPENROUTER_API_BASE=https://openrouter.ai/api    # Optional: API endpoint
+   # Required
+   OPENROUTER_API_KEY=sk-xxxx                                               # OpenRouter API key
+
+   # Optional - for customizing LLM behavior
+   OPENROUTER_MODEL=anthropic/claude-opus-4                            # Model to use (default shown)
+   OPENROUTER_API_BASE=https://openrouter.ai/api/v1/chat/completions      # API endpoint (default shown)
+   OPENROUTER_SYSTEM_PROMPT="You are a helpful assistant..."               # System prompt (default: bash scripts)
    ```
 
 ### Build Process
