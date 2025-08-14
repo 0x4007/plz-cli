@@ -23,7 +23,7 @@ struct Cli {
     force: bool,
 }
 
-fn generate_code(prompt: &str, max_tokens: u32, config: &Config) -> Result<String, String> {
+fn generate_code(prompt: &str, config: &Config) -> Result<String, String> {
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
@@ -33,7 +33,6 @@ fn generate_code(prompt: &str, max_tokens: u32, config: &Config) -> Result<Strin
         .post(&config.api_base)
         .json(&json!({
             "model": &config.model,
-            "max_tokens": max_tokens,
             "temperature": 0,
             "messages": [
                 {
@@ -86,17 +85,10 @@ fn generate_code(prompt: &str, max_tokens: u32, config: &Config) -> Result<Strin
 fn main() {
     let cli = Cli::parse();
     let config = Config::new();
-    let mut current_token_limit = 1000;
     let prompt = build_prompt(&cli.prompt.join(" "));
-    let mut spinner;
+    let mut spinner = Spinner::new(Spinners::BouncingBar, "Generating your command...".into());
 
-    loop {
-        spinner = Spinner::new(Spinners::BouncingBar, format!(
-            "Generating your command with {} tokens...",
-            current_token_limit
-        ).into());
-
-        let code_result = generate_code(&prompt, current_token_limit, &config);
+    let code_result = generate_code(&prompt, &config);
 
         match code_result {
             Ok(code) => {
@@ -147,18 +139,12 @@ fn main() {
 
                     if !output.status.success() {
                         let error_output = String::from_utf8_lossy(&output.stderr);
+                        spinner.stop_and_persist(
+                            "✖".red().to_string().as_str(),
+                            "Command execution failed".red().to_string(),
+                        );
                         println!("{}", error_output);
-
-                        if current_token_limit >= 64000 {
-                            spinner.stop_and_persist(
-                                "✖".red().to_string().as_str(),
-                                "The program failed even with maximum token limit.".red().to_string(),
-                            );
-                            std::process::exit(1);
-                        }
-
-                        current_token_limit *= 2;
-                        continue;
+                        std::process::exit(1);
                     }
 
                     spinner.stop_and_persist(
@@ -168,26 +154,15 @@ fn main() {
 
                     println!("{}", String::from_utf8_lossy(&output.stdout));
                 }
-                break;
             }
             Err(e) => {
                 spinner.stop_and_persist(
                     "✖".red().to_string().as_str(),
                     e.red().to_string(),
                 );
-                if current_token_limit >= 64000 {
-                    spinner.stop_and_persist(
-                        "✖".red().to_string().as_str(),
-                        "Failed to generate code even with maximum token limit.".red().to_string(),
-                    );
-                    std::process::exit(1);
-                }
-
-                current_token_limit *= 2;
-                continue;
+                std::process::exit(1);
             }
         }
-    }
 }
 
 fn build_prompt(prompt: &str) -> String {
