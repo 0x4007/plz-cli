@@ -82,6 +82,154 @@ fn generate_code(prompt: &str, config: &Config) -> Result<String, String> {
     Ok(content.trim().to_string())
 }
 
+fn execute_with_retry(code: &str, config: &Config, cli: &Cli, prompt: &str, attempt: u8) -> bool {
+    if attempt > 2 {
+        println!("{}", "Maximum retry attempts reached. Aborting.".red());
+        return false;
+    }
+    
+    let mut spinner = Spinner::new(Spinners::BouncingBar, 
+        if attempt == 1 { "Executing...".into() } else { "Executing improved solution...".into() }
+    );
+    
+    let output = Command::new("bash")
+        .arg("-c")
+        .arg(code)
+        .output()
+        .unwrap_or_else(|_| {
+            spinner.stop_and_persist(
+                "✖".red().to_string().as_str(),
+                "Failed to execute the generated program.".red().to_string(),
+            );
+            std::process::exit(1);
+        });
+    
+    if output.status.success() {
+        spinner.stop_and_persist(
+            "✔".green().to_string().as_str(),
+            if attempt == 1 { 
+                "Command ran successfully".green().to_string() 
+            } else { 
+                "Solution executed successfully!".green().to_string() 
+            },
+        );
+        println!("{}", String::from_utf8_lossy(&output.stdout));
+        true
+    } else {
+        let error_output = String::from_utf8_lossy(&output.stderr);
+        spinner.stop_and_persist(
+            "✖".red().to_string().as_str(),
+            if attempt == 1 { 
+                "Command execution failed".red().to_string() 
+            } else { 
+                "The improved solution also failed".red().to_string() 
+            },
+        );
+        println!("{}", error_output);
+        
+        if attempt >= 2 {
+            println!("{}", "Reached maximum retry attempts (2). Aborting.".red());
+            return false;
+        }
+        
+        // Search for the error on Perplexity
+        spinner = Spinner::new(Spinners::BouncingBar, "Searching for error solution...".into());
+        
+        // Format the error message for search with system context
+        let system_context = get_system_context();
+        let search_query = format!("{}\n\nCommand that failed: {}\n\nError: {}\n\nSystem context:\n{}", 
+            &prompt.lines().next().unwrap_or(&prompt),
+            code.lines().filter(|l| !l.trim().starts_with('#')).collect::<Vec<_>>().join(" "),
+            error_output.trim(),
+            system_context
+        );
+        
+        let perplexity_output = Command::new("bash")
+            .arg("-c")
+            .arg(format!("? {}", search_query))
+            .output();
+        
+        match perplexity_output {
+            Ok(perplexity_result) => {
+                let perplexity_response = String::from_utf8_lossy(&perplexity_result.stdout);
+                spinner.stop_and_persist(
+                    "🔍".to_string().as_str(),
+                    format!("Found potential solution from Perplexity (attempt {}/2)", attempt).bright_blue().to_string(),
+                );
+                
+                // Generate a new solution based on Perplexity's findings
+                spinner = Spinner::new(Spinners::BouncingBar, "Generating solution based on search results...".into());
+                
+                let solution_prompt = format!(
+                    "The user asked: {}\n\n\
+                    The command failed with error: {}\n\n\
+                    System context: {}\n\n\
+                    Perplexity search results suggest:\n{}\n\n\
+                    Based on this information, provide a corrected bash script that will work.",
+                    prompt,
+                    error_output.trim(),
+                    system_context,
+                    perplexity_response.trim()
+                );
+                
+                match generate_code(&solution_prompt, &config) {
+                    Ok(new_code) => {
+                        spinner.stop_and_persist(
+                            "✨".to_string().as_str(),
+                            "Generated solution based on search results:".green().to_string(),
+                        );
+                        
+                        PrettyPrinter::new()
+                            .input_from_bytes(new_code.as_bytes())
+                            .language("bash")
+                            .grid(true)
+                            .print()
+                            .unwrap();
+                        
+                        let should_run = if cli.force {
+                            true
+                        } else {
+                            Question::new(
+                                ">> Run the improved solution? [Y/n]"
+                                    .bright_black()
+                                    .to_string()
+                                    .as_str(),
+                            )
+                            .yes_no()
+                            .until_acceptable()
+                            .default(Answer::YES)
+                            .ask()
+                            .expect("Couldn't ask question.")
+                                == Answer::YES
+                        };
+                        
+                        if should_run {
+                            config.write_to_history(new_code.as_str());
+                            execute_with_retry(&new_code, config, cli, prompt, attempt + 1)
+                        } else {
+                            false
+                        }
+                    }
+                    Err(e) => {
+                        spinner.stop_and_persist(
+                            "✖".red().to_string().as_str(),
+                            format!("Failed to generate solution: {}", e).red().to_string(),
+                        );
+                        false
+                    }
+                }
+            }
+            Err(_) => {
+                spinner.stop_and_persist(
+                    "⚠".yellow().to_string().as_str(),
+                    "Could not search Perplexity for error solution".yellow().to_string(),
+                );
+                false
+            }
+        }
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
     let config = Config::new();
@@ -123,36 +271,9 @@ fn main() {
 
                 if should_run {
                     config.write_to_history(code.as_str());
-                    spinner = Spinner::new(Spinners::BouncingBar, "Executing...".into());
-
-                    let output = Command::new("bash")
-                        .arg("-c")
-                        .arg(code.as_str())
-                        .output()
-                        .unwrap_or_else(|_| {
-                            spinner.stop_and_persist(
-                                "✖".red().to_string().as_str(),
-                                "Failed to execute the generated program.".red().to_string(),
-                            );
-                            std::process::exit(1);
-                        });
-
-                    if !output.status.success() {
-                        let error_output = String::from_utf8_lossy(&output.stderr);
-                        spinner.stop_and_persist(
-                            "✖".red().to_string().as_str(),
-                            "Command execution failed".red().to_string(),
-                        );
-                        println!("{}", error_output);
+                    if !execute_with_retry(&code, &config, &cli, &prompt, 1) {
                         std::process::exit(1);
                     }
-
-                    spinner.stop_and_persist(
-                        "✔".green().to_string().as_str(),
-                        "Command ran successfully".green().to_string(),
-                    );
-
-                    println!("{}", String::from_utf8_lossy(&output.stdout));
                 }
             }
             Err(e) => {
@@ -200,4 +321,63 @@ fn get_env_vars() -> Vec<String> {
                 .map(|var_name| var_name.trim().to_string())
         })
         .collect()
+}
+
+fn get_system_context() -> String {
+    let mut context = String::new();
+    
+    // OS information
+    context.push_str(&format!("OS: {} {}\n", 
+        std::env::consts::OS, 
+        std::env::consts::ARCH
+    ));
+    
+    // Shell information
+    if let Ok(shell) = std::env::var("SHELL") {
+        context.push_str(&format!("Shell: {}\n", shell));
+    }
+    
+    // macOS version if on macOS
+    if cfg!(target_os = "macos") {
+        if let Ok(output) = Command::new("sw_vers").arg("-productVersion").output() {
+            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            context.push_str(&format!("macOS version: {}\n", version));
+        }
+    }
+    
+    // Linux distribution if on Linux
+    if cfg!(target_os = "linux") {
+        if let Ok(contents) = std::fs::read_to_string("/etc/os-release") {
+            if let Some(line) = contents.lines().find(|l| l.starts_with("PRETTY_NAME=")) {
+                let distro = line.trim_start_matches("PRETTY_NAME=").trim_matches('"');
+                context.push_str(&format!("Linux distribution: {}\n", distro));
+            }
+        }
+    }
+    
+    // Check for common package managers
+    let package_managers = vec![
+        ("brew", "Homebrew"),
+        ("apt", "APT"),
+        ("yum", "YUM"),
+        ("dnf", "DNF"),
+        ("pacman", "Pacman"),
+        ("npm", "NPM"),
+        ("cargo", "Cargo"),
+        ("pip", "pip"),
+        ("pip3", "pip3"),
+    ];
+    
+    let mut available_pm = Vec::new();
+    for (cmd, name) in package_managers {
+        if Command::new("which").arg(cmd).output().is_ok_and(|o| o.status.success()) {
+            available_pm.push(name);
+        }
+    }
+    
+    if !available_pm.is_empty() {
+        context.push_str(&format!("Available package managers: {}\n", available_pm.join(", ")));
+    }
+    
+    context
 }
