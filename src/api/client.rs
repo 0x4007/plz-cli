@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use crate::config::Config;
 use crate::utils::logging::log_to_file;
+use crate::utils::markdown::extract_code_from_markdown;
 use super::error::ApiError;
 
 pub fn generate_code(prompt: &str, config: &Config) -> Result<String, ApiError> {
@@ -63,7 +64,7 @@ pub fn generate_code(prompt: &str, config: &Config) -> Result<String, ApiError> 
         .and_then(|content| content.as_str())
         .ok_or_else(|| ApiError::InvalidResponse)?;
 
-    Ok(content.trim().to_string())
+    Ok(extract_code_from_markdown(content))
 }
 
 fn log_debug_info(prompt: &str, config: &Config) {
