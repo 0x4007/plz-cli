@@ -8,7 +8,7 @@ categories = ["command-line-utilities"]
 homepage = "https://github.com/0x4007/plz-cli"
 repository = "https://github.com/0x4007/plz-cli"
 authors = ["Miguel Piedrafita <soy@miguelpiedrafita.com>", "0x4007"]
-description = "Generate bash scripts from the command line, using Claude 3.5 Sonnet"
+description = "Generate bash scripts from the command line using the UbiquityOS AI Gateway"
 
 [dependencies]
 question = "0.2.2"
@@ -16,6 +16,6 @@ spinners = "4.1.0"
 serde_json = { version = "1.0.89", default-features = false }
 clap = { version = "4.0.29", features = ["derive"] }
 reqwest = { version = "0.11.13", default-features = false, features = ["json", "blocking", "rustls-tls"] }
-bat = { version = "0.22.1", default-features = false, features = ["regex-onig"] }
 colored = "2.0.0"
 dirs = "5.0"
+syntect = { version = "5.0.0", default-features = false, features = ["default-syntaxes", "default-themes", "regex-onig"] }

@@ -4,7 +4,7 @@
 Terminal operations often require specific command knowledge and syntax memorization, creating barriers for users who know what they want to do but aren't familiar with the exact commands needed. Even experienced users may need to frequently consult documentation or search for complex command combinations.
 
 ## Solution
-plz-cli bridges this gap by allowing users to describe their intended actions in natural language. By leveraging Claude 3.5 Sonnet's capabilities, it translates these descriptions into appropriate shell commands, making terminal operations more accessible and efficient.
+plz-cli bridges this gap by allowing users to describe their intended actions in natural language. By using the UbiquityOS AI Gateway, it translates these descriptions into appropriate shell commands, making terminal operations more accessible and efficient.
 
 ## User Experience Goals
 
@@ -46,7 +46,7 @@ plz-cli bridges this gap by allowing users to describe their intended actions in
 - Quick and efficient command generation
 
 ## Key Differentiators
-- Uses Claude 3.5 Sonnet for improved command generation
+- Uses the UbiquityOS AI Gateway for command generation
 - Focus on safety with command preview
 - Simple, straightforward interface
 - Fast and efficient operation

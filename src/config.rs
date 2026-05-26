@@ -1,41 +1,45 @@
 use colored::Colorize;
 use std::{env, io::Write, process::exit};
 
+const UOS_AI_CHAT_COMPLETIONS_URL: &str = "https://ai.ubq.fi/v1/chat/completions";
+const PROMPT_CACHE_KEY_PREFIX: &str = "plz-cli:bash-script:v1";
+const DEFAULT_MODEL: &str = "gpt-5.3-codex-spark";
+const DEFAULT_REASONING_EFFORT: &str = "xhigh";
+const DEFAULT_SYSTEM_PROMPT: &str =
+    "You are a helpful assistant that generates bash scripts based on user prompts.";
+
 pub struct Config {
-    pub api_key: String,
+    pub api_token: String,
     pub shell: String,
     pub model: String,
-    pub api_base: String,
+    pub reasoning_effort: String,
+    pub prompt_cache_key: String,
+    pub chat_completions_url: String,
     pub system_prompt: String,
 }
 
 impl Config {
-    pub fn new() -> Self {
-        let api_key = env::var("OPENROUTER_API_KEY").unwrap_or_else(|_| {
-            println!("{}", "This program requires an OpenRouter API key to run. Please set the OPENROUTER_API_KEY environment variable.".red());
+    pub fn new(model: Option<String>, reasoning_effort: Option<String>) -> Self {
+        let api_token = env::var("UOS_AI_TOKEN").or_else(|_| env::var("DENO_DEPLOY_TOKEN")).unwrap_or_else(|_| {
+            println!("{}", "This program requires a UOS AI Gateway token to run. Please set UOS_AI_TOKEN or DENO_DEPLOY_TOKEN.".red());
             exit(1);
         });
 
         let shell = env::var("SHELL").unwrap_or_else(|_| String::new());
 
-        // Model configuration with default to Claude 3.7 Sonnet
-        let model = env::var("OPENROUTER_MODEL")
-            .unwrap_or_else(|_| "anthropic/claude-opus-4".to_string());
-
-        // API base URL configuration with default
-        let api_base = env::var("OPENROUTER_API_BASE")
-            .unwrap_or_else(|_| "https://openrouter.ai/api/v1/chat/completions".to_string());
-
-        // System prompt configuration with default
-        let system_prompt = env::var("OPENROUTER_SYSTEM_PROMPT")
-            .unwrap_or_else(|_| "You are a helpful assistant that generates bash scripts based on user prompts.".to_string());
+        let model = model.unwrap_or_else(|| DEFAULT_MODEL.to_string());
+        let reasoning_effort =
+            reasoning_effort.unwrap_or_else(|| DEFAULT_REASONING_EFFORT.to_string());
+        let prompt_cache_key = prompt_cache_key(&model, &reasoning_effort);
 
         Self {
-            api_key,
+            api_token,
             shell,
             model,
-            api_base,
-            system_prompt,
+            reasoning_effort,
+            prompt_cache_key,
+            chat_completions_url: UOS_AI_CHAT_COMPLETIONS_URL.to_string(),
+            system_prompt: DEFAULT_SYSTEM_PROMPT.to_string(),
         }
     }
 
@@ -51,8 +55,27 @@ impl Config {
             .open(history_file)
             .and_then(|mut file| file.write_all(format!("{code}\n").as_bytes()))
         {
-            eprintln!("Failed to write to history file: {}", err);
+            eprintln!("Failed to write to history file: {err}");
             exit(1);
         }
     }
+}
+
+fn prompt_cache_key(model: &str, reasoning_effort: &str) -> String {
+    let model = sanitize_cache_key_part(model);
+    let reasoning_effort = sanitize_cache_key_part(reasoning_effort);
+    format!("{PROMPT_CACHE_KEY_PREFIX}:{model}:{reasoning_effort}")
+}
+
+fn sanitize_cache_key_part(value: &str) -> String {
+    value
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | '_') {
+                character
+            } else {
+                '_'
+            }
+        })
+        .collect()
 }

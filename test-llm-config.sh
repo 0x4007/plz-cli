@@ -1,31 +1,31 @@
 #!/bin/bash
-# Test script to verify LLM model configuration
+# Test script to verify UbiquityOS AI Gateway configuration
 
-echo "=== Testing plz-cli LLM Configuration ==="
+echo "=== Testing plz-cli Gateway Configuration ==="
 echo
 
 # Check current configuration
-echo "Current OPENROUTER_MODEL: ${OPENROUTER_MODEL:-Not set}"
+if [ -n "${UOS_AI_TOKEN:-}" ]; then
+    echo "Auth source: UOS_AI_TOKEN"
+elif [ -n "${DENO_DEPLOY_TOKEN:-}" ]; then
+    echo "Auth source: DENO_DEPLOY_TOKEN"
+else
+    echo "Missing auth. Set UOS_AI_TOKEN or DENO_DEPLOY_TOKEN."
+    exit 1
+fi
 echo
 
-# Test with default model
-echo "1. Testing with default model (should use Claude Opus):"
+# Test with default gateway settings
+echo "1. Testing with default gateway settings:"
 plz "echo hello world"
 echo
 
-# Test with a different model
-echo "2. Testing with different model (Claude 3.5 Sonnet):"
-OPENROUTER_MODEL="anthropic/claude-3.5-sonnet-20241022" plz "echo testing with sonnet"
+# Test with explicit model and reasoning overrides
+echo "2. Testing explicit model/reasoning overrides:"
+plz --model gpt-5.3-codex-spark --reasoning-effort low "echo hello world"
 echo
 
-# Test with invalid model (should still work but might get different results)
-echo "3. Testing with custom model specification:"
-OPENROUTER_MODEL="openai/gpt-4-turbo" plz "echo testing with gpt-4"
+echo "=== Gateway Configuration Test Complete ==="
 echo
-
-echo "=== Configuration Test Complete ==="
-echo
-echo "To permanently change the model, update your .bashrc:"
-echo "  export OPENROUTER_MODEL='model-name-here'"
-echo
-echo "Available models can be found at: https://openrouter.ai/models"
+echo "Available models can be checked with:"
+echo "  curl -sS https://ai.ubq.fi/v1/models -H 'Authorization: Bearer \$UOS_AI_TOKEN'"

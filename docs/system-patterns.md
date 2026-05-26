@@ -5,7 +5,7 @@
 ```mermaid
 flowchart TD
     CLI[CLI Interface] --> Config[Configuration]
-    CLI --> AIClient[Claude AI Client]
+    CLI --> AIClient[UOS AI Gateway Client]
     AIClient --> CommandGen[Command Generation]
     CommandGen --> Preview[Command Preview]
     Preview --> Execution[Command Execution]
@@ -32,11 +32,13 @@ flowchart TD
    - Builds context-aware prompt
    - Includes OS-specific hints
    - Captures environment variables
+   - Keeps the request-specific task at the end for prompt-cache reuse
 
 2. **AI Integration**
-   - Connects to Claude 3.5 Sonnet
+   - Connects to the UbiquityOS AI Gateway
    - Manages API communication
-   - Handles response parsing
+   - Parses streaming server-sent events
+   - Renders incremental Bash-highlighted preview output
    - Error management for API issues
 
 3. **Command Execution**
@@ -77,7 +79,7 @@ flowchart TD
 - Shell compatibility issues
 
 ## Performance Considerations
-- Synchronous API calls
+- Streaming API calls for responsive command previews
 - Minimal state management
 - Direct command execution
 - Efficient error handling
@@ -95,13 +97,13 @@ sequenceDiagram
     participant User
     participant CLI
     participant Config
-    participant Claude
+    participant Gateway
     participant Shell
 
     User->>CLI: Enter command description
     CLI->>Config: Load configuration
-    CLI->>Claude: Generate command
-    Claude-->>CLI: Return script
+    CLI->>Gateway: Generate command
+    Gateway-->>CLI: Return script
     CLI->>User: Preview script
     User->>CLI: Confirm execution
     CLI->>Shell: Execute script
@@ -110,7 +112,7 @@ sequenceDiagram
 ```
 
 ## Integration Points
-1. Claude 3.5 Sonnet API
+1. UbiquityOS AI Gateway chat completions API
 2. Shell environment
 3. History file system
 4. Environment configuration

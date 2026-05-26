@@ -6,7 +6,12 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}Testing plz-cli token limits${NC}\n"
+echo -e "${BLUE}Testing plz-cli gateway generation${NC}\n"
+
+if [ -z "${UOS_AI_TOKEN:-}" ] && [ -z "${DENO_DEPLOY_TOKEN:-}" ]; then
+    echo -e "${RED}Missing auth. Set UOS_AI_TOKEN or DENO_DEPLOY_TOKEN.${NC}"
+    exit 1
+fi
 
 # Function to test command and check output
 test_command() {
@@ -30,24 +35,19 @@ test_command() {
     echo
 }
 
-# Test 1: Simple command (should work in default mode)
-test_command "Simple command with default tokens" \
+# Test 1: Simple command
+test_command "Simple command generation" \
     "cargo run -- -y 'show me the current directory contents'" \
     0
 
-# Test 2: Moderately complex command (should work in default mode)
-test_command "Moderate complexity with default tokens" \
+# Test 2: Moderately complex command
+test_command "Moderate command generation" \
     "cargo run -- -y 'create a script that finds all markdown files in the current directory, extracts their headers, and creates a table of contents'" \
     0
 
-# Test 3: Complex command without --extended (testing token limit)
-test_command "Complex command without extended tokens" \
+# Test 3: Complex command
+test_command "Complex command generation" \
     "cargo run -- -y 'write a script that lists all files recursively, calculates their size, shows file types, creates a summary grouped by extension, sorts by size, and displays the top 10 largest files with percentage of total disk usage'" \
-    0
-
-# Test 4: Simple long command with --extended
-test_command "Simple command with extended tokens" \
-    "cargo run -- -y --extended 'write a script that lists all files recursively, calculates their size, shows file types, creates a summary grouped by extension, sorts by size, and displays the top 10 largest files with percentage of total disk usage'" \
     0
 
 # Clean up

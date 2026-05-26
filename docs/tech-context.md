@@ -9,8 +9,8 @@
    - Provides strong safety guarantees
    - Efficient binary output
 
-2. **OpenRouter API (with Claude 3 Sonnet)**
-   - Managed API access to Claude
+2. **UbiquityOS AI Gateway**
+   - OpenAI-compatible chat completions endpoint
    - Natural language processing
    - Command generation
    - High accuracy results
@@ -21,7 +21,7 @@
 - **serde_json**: JSON serialization/deserialization
 - **colored**: Terminal text coloring
 - **spinners**: Terminal progress indicators
-- **bat**: Syntax highlighting for command preview
+- **syntect**: Streaming Bash syntax highlighting for command previews
 - **question**: User input handling
 
 ## Development Setup
@@ -35,12 +35,8 @@
 2. **Environment Configuration**
    ```bash
    # Required
-   OPENROUTER_API_KEY=sk-xxxx                                               # OpenRouter API key
-
-   # Optional - for customizing LLM behavior
-   OPENROUTER_MODEL=anthropic/claude-opus-4                            # Model to use (default shown)
-   OPENROUTER_API_BASE=https://openrouter.ai/api/v1/chat/completions      # API endpoint (default shown)
-   OPENROUTER_SYSTEM_PROMPT="You are a helpful assistant..."               # System prompt (default: bash scripts)
+   UOS_AI_TOKEN=...          # UbiquityOS AI Gateway token
+   DENO_DEPLOY_TOKEN=...     # Optional fallback accepted by the gateway
    ```
 
 ### Build Process
@@ -62,7 +58,7 @@
 ## Technical Constraints
 
 ### API Limitations
-- Requires valid OpenRouter API key
+- Requires a valid UbiquityOS AI Gateway token or accepted admin token
 - Subject to API rate limits
 - Dependent on API availability
 - Limited to bash script generation
@@ -76,9 +72,12 @@
 ## Configuration Details
 
 ### API Configuration
-- API key from environment
-- Configurable API base URL
-- Configurable token limits (1000 default, 32000 extended)
+- Gateway token from `UOS_AI_TOKEN` or `DENO_DEPLOY_TOKEN`
+- Fixed chat completions endpoint: `https://ai.ubq.fi/v1/chat/completions`
+- Default model `gpt-5.3-codex-spark` with `reasoning_effort: xhigh`
+- Per-request overrides through `--model` and `--reasoning-effort`
+- Stable `prompt_cache_key` for reusable shell-generation prompts
+- Uses OpenAI-compatible server-sent events for live generation previews
 - Error handling for API issues
 
 ### Shell Integration

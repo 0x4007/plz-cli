@@ -2,7 +2,7 @@
 
 A CLI tool that generates shell scripts from a human readable description.
 
-This is a modded version of [plz-cli](https://github.com/m1guelpf/plz-cli) that now uses Claude 3.7 Sonnet via OpenRouter instead of GPT-3.5 Turbo Instruct.
+This is a modded version of [plz-cli](https://github.com/m1guelpf/plz-cli) that uses the UbiquityOS AI Gateway.
 
 ## Installation
 
@@ -16,41 +16,30 @@ You may need to close and reopen your terminal after installation. Alternatively
 
 ## Usage
 
-`plz` uses [Claude 3.7 Sonnet](https://openrouter.ai/docs) via OpenRouter by default. To use it, you'll need to grab an API key from [OpenRouter](https://openrouter.ai/keys), and save it to `OPENROUTER_API_KEY` as follows (you can also save it in your bash/zsh profile for persistence between sessions).
+`plz` uses the UbiquityOS AI Gateway at `https://ai.ubq.fi/v1/chat/completions`. To use it, set a gateway token in `UOS_AI_TOKEN` (you can also save it in your bash/zsh profile for persistence between sessions). If `UOS_AI_TOKEN` is not set, `plz` falls back to `DENO_DEPLOY_TOKEN`.
 
 ```bash
-export OPENROUTER_API_KEY='sk-XXXXXXXX'
+export UOS_AI_TOKEN='...'
 ```
 
-### Configuration Options
+The CLI sends streaming requests with model `gpt-5.3-codex-spark` and `reasoning_effort: xhigh` by default. Requests include a stable `prompt_cache_key`, and the prompt keeps reusable instruction/environment context before the task. Generated scripts are shown as a live Bash-highlighted preview before the confirmation prompt.
 
-You can customize the LLM model and behavior using these optional environment variables:
-
-```bash
-# Use a different model (default: anthropic/claude-opus-4)
-export OPENROUTER_MODEL='openai/gpt-4'  # or any model available on OpenRouter
-
-# Use a custom API endpoint (default: https://openrouter.ai/api/v1/chat/completions)
-export OPENROUTER_API_BASE='https://custom-endpoint.com/v1/chat/completions'
-
-# Use a custom system prompt (default: generates bash scripts)
-export OPENROUTER_SYSTEM_PROMPT='You are a PowerShell expert. Generate PowerShell scripts.'
-```
+Use `GET https://ai.ubq.fi/v1/models` with the same bearer token to inspect models available through the gateway.
 
 ### Examples
 
 ```bash
-# Basic usage with default Claude model
+# Basic usage with the default gateway model
 plz list all files in current directory
 
-# Use GPT-4 instead
-export OPENROUTER_MODEL='openai/gpt-4'
-plz find all large files over 100MB
+# Run the generated script without an interactive confirmation prompt
+plz -y find all large files over 100MB
 
-# Use Claude Opus with custom prompt for PowerShell
-export OPENROUTER_MODEL='anthropic/claude-3-opus'
-export OPENROUTER_SYSTEM_PROMPT='You are a PowerShell expert. Generate PowerShell scripts.'
-plz get system information
+# Try a different model and reasoning effort for one request
+plz --model gpt-5.3-codex --reasoning-effort low summarize this repo
+
+# Short alias for reasoning effort
+plz --reasoning high list stale branches
 ```
 
 Once you have configured your environment, run `plz` followed by whatever it is that you want to do (`plz show me all options for the plz cli`).
@@ -59,18 +48,19 @@ To get a full overview of all available options, run `plz --help`
 
 ```sh
 $ plz --help
-Generates bash scripts from the command line
+Generate bash scripts from the command line using the UbiquityOS AI Gateway
 
-Usage: plz [OPTIONS] <PROMPT>
+Usage: plz [OPTIONS] [PROMPT]...
 
 Arguments:
-  <PROMPT>  Description of the command to execute
+  [PROMPT]...  Description of the command to execute
 
 Options:
-  -y, --force     Run the generated program without asking for confirmation
-      --extended  Remove token limit for complex scripts (may increase API costs)
-  -h, --help      Print help information
-  -V, --version   Print version information
+  -y, --force                      Run the generated program without asking for confirmation
+      --model <MODEL>              Override the gateway model for this request
+      --reasoning-effort <EFFORT>  Override reasoning effort for this request [aliases: reasoning] [possible values: none, minimal, low, medium, high, xhigh]
+  -h, --help                       Print help information
+  -V, --version                    Print version information
 ```
 
 ## Develop

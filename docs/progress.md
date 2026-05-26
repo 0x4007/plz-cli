@@ -4,7 +4,7 @@
 
 ### Core Functionality ✓
 - [x] Natural language command generation
-- [x] Claude 3.5 Sonnet integration
+- [x] UbiquityOS AI Gateway integration
 - [x] Command preview and execution
 - [x] Environment variable support
 - [x] Shell history integration
@@ -14,13 +14,13 @@
 - [x] Command-line argument parsing
 - [x] Force execution flag
 - [x] Interactive confirmation
-- [x] Progress indicators
-- [x] Syntax highlighted preview
+- [x] Streaming generation preview
+- [x] Bash syntax highlighted preview
 - [x] Color-coded feedback
 
 ### Configuration ✓
 - [x] API key management
-- [x] API base URL configuration
+- [x] Fixed gateway endpoint configuration
 - [x] Shell detection
 - [x] Environment variable handling
 
@@ -34,7 +34,7 @@
 
 ### API Integration
 - API communication
-- Response parsing
+- Streaming response parsing
 - Error handling
 - Token management
 
@@ -56,7 +56,7 @@
 - Limited to bash scripts
 - Unix-like systems only
 - No persistent settings
-- Synchronous API calls
+- Depends on gateway streaming availability
 
 ### Functional
 - Single command generation
