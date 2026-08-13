@@ -58,7 +58,7 @@ Arguments:
 Options:
   -y, --force                      Run the generated program without asking for confirmation
       --model <MODEL>              Override the gateway model for this request
-      --reasoning-effort <EFFORT>  Override reasoning effort for this request [aliases: reasoning] [possible values: none, minimal, low, medium, high, xhigh]
+      --reasoning-effort <EFFORT>  Override reasoning effort for this request [aliases: reasoning] [possible values: none, minimal, low, medium, high, xhigh, max]
   -h, --help                       Print help information
   -V, --version                    Print version information
 ```
