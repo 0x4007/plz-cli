@@ -27,7 +27,8 @@ mod config;
 #[command(author, version, about, long_about = None)]
 struct Cli {
     /// Description of the command to execute
-    prompt: Vec<String>,
+    #[clap(required = true)]
+    prompt: String,
 
     /// Run the generated program without asking for confirmation
     #[clap(short = 'y', long)]
@@ -438,7 +439,7 @@ fn main() {
         model,
         reasoning_effort,
     } = Cli::parse();
-    let prompt = build_prompt(&prompt.join(" "));
+    let prompt = build_prompt(&prompt);
     let config = Config::new(
         model,
         reasoning_effort.map(|effort| effort.as_str().to_string()),

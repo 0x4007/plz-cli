@@ -30,19 +30,19 @@ Use `GET https://ai.ubq.fi/v1/models` with the same bearer token to inspect mode
 
 ```bash
 # Basic usage with the default gateway model
-plz list all files in current directory
+plz "list all files in current directory"
 
 # Run the generated script without an interactive confirmation prompt
-plz -y find all large files over 100MB
+plz -y "find all large files over 100MB"
 
 # Try a different model and reasoning effort for one request
-plz --model gpt-5.3-codex --reasoning-effort low summarize this repo
+plz --model gpt-5.3-codex --reasoning-effort low "summarize this repo"
 
 # Short alias for reasoning effort
-plz --reasoning high list stale branches
+plz --reasoning high "list stale branches"
 ```
 
-Once you have configured your environment, run `plz` followed by whatever it is that you want to do (`plz show me all options for the plz cli`).
+Once you have configured your environment, run `plz` followed by a quoted description of whatever you want to do (`plz "show me all options for the plz cli"`).
 
 To get a full overview of all available options, run `plz --help`
 
@@ -50,10 +50,10 @@ To get a full overview of all available options, run `plz --help`
 $ plz --help
 Generate bash scripts from the command line using the UbiquityOS AI Gateway
 
-Usage: plz [OPTIONS] [PROMPT]...
+Usage: plz [OPTIONS] <PROMPT>
 
 Arguments:
-  [PROMPT]...  Description of the command to execute
+  <PROMPT>  Description of the command to execute
 
 Options:
   -y, --force                      Run the generated program without asking for confirmation
